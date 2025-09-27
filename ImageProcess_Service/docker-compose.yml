@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  image-service:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - IMAGE_SERVICE_WORKSPACE=/app/workspace
+      - IMAGE_SERVICE_MAX_WIDTH=2048
+      - IMAGE_SERVICE_MAX_HEIGHT=2048
+      - IMAGE_SERVICE_QUALITY=85
+      - IMAGE_SERVICE_ENABLE_THUMBNAILS=true
+    volumes:
+      - ./workspace:/app/workspace
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - image-service
+    restart: unless-stopped
+    profiles:
+      - with-nginx
+
+volumes:
+  workspace:
+  logs:
